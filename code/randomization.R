@@ -30,12 +30,14 @@ new_arm <- generate_assignment(prob)
 rand_note <- paste("Record", pl$record, "assignment = ", new_arm, "probability =", prob, Sys.Date())
 write(rand_note, "new_randomization.txt", append = TRUE)
 
+
+
 ###---------------------------###
 ### Update REDCap
 ###---------------------------###
 
 ntr <- new_to_randomize %>% mutate(arm = new_arm, randomization_notes = rand_note)
-write.csv(ntr, "randomized_patient.csv")
+# write.csv(ntr, "randomized_patient.csv")
 
 
 rc_con <- redcapConnection(
