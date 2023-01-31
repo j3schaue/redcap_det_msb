@@ -41,7 +41,7 @@ ntr <- new_to_randomize %>% mutate(arm = new_arm, randomization_notes = rand_not
 
 
 rc_con <- redcapConnection(
-  url = "https://redcap.nubic.northwestern.edu/redcap/api/",
+  url = URL,
   token = TOKEN, # Set API token as global variable
   conn = con,
   project = "7091",
@@ -50,7 +50,7 @@ rc_con <- redcapConnection(
 
 importRecords(
   rc_con,
-  data = ntr %>% mutate(redcap_event_name = "baseline_arm_1") %>% select(-race, -age),
+  data = ntr %>% mutate(redcap_event_name = "baseline_arm_1"), #%>% select(-race, -age),
   overwriteBehavior = "normal",
   returnContent = "count"
 )
