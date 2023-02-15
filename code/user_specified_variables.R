@@ -2,8 +2,13 @@
 ###---USER-MADE VARIABLE NAMES---------###
 ###------------------------------------###
 
+library(tidyverse)
+
 # Edit the following variables to tailor
 # code to specific redcap project
+
+# Project ID in REDCap
+PID <- "7019"
 
 # Column name indicating study arm
 # We know that a participant is randomized if
@@ -42,6 +47,10 @@ study_center = "center" # Used for multi-center trials
 bal_covariate_type <- list(
   "numeric", "factor", "factor", "factor"
 )
+bal_covariate_type <- lapply(bal_covariate_type,
+                             FUN = function(x) paste0("as.", x)
+)
+# names(bal_covariate_type) <- bal_covariates
 
 
 # REDCap API token and relevant URL
@@ -58,6 +67,10 @@ min_n_center <- 4
 # P-value cutoff for balance tests 
 p_cutoff <- 0.3
 
+# Notes: Change to TRUE if you want to document notes about MSB randomization in REDCap
+#   If TRUE, specify the column name for the randomization notes.
+notes <- FALSE
+note_name <- "randomization_notes"
 
 ###----------------------------------------------------###
 ### Sanitize/Standardize Balance Covariates
@@ -75,12 +88,11 @@ standardize_msb_variables <- function(data, bal_covariates, bal_covariate_type){
       .vars = bal_covariates,
       .funs = bal_covariate_type
     )
+  
+  return(out)
     
 }
 
 
 
-bal_covariate_type <- lapply(bal_covariate_type,
-                             FUN = function(x) as.formula(paste0("~as.", x))
-)
-names(bal_covariate_type) <- bal_covariates
+

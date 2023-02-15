@@ -1,5 +1,5 @@
-ource("source_msb.R")
-write("sourced main code", "srcmvall.txt")
+source("apply_msb.R")
+# write("sourced main code", "srcmvall.txt")
 
 ## Notes
 # This script is triggered by parse_payload.R
@@ -15,8 +15,9 @@ write("sourced main code", "srcmvall.txt")
 ###---------------------------###
 ### Randomize
 ###---------------------------###
-if(nrow(already_randomized) == 0){already_randomized = tibble()}
+if(nrow(already_randomized) == 0){ already_randomized = data.frame() }
 
+# Get the randomization probability based on MSB algorithm
 prob <- get_votes(
   data = already_randomized,
   new_data = new_to_randomize,
@@ -26,8 +27,10 @@ prob <- get_votes(
   min_n_adapt = min_n_algorithm
 )
 
+# Generate new random assignment
 new_arm <- generate_assignment(prob)
-rand_note <- paste("Record", pl$record, "assignment = ", new_arm, "probability =", prob, Sys.Date())
+
+# Document on text file on remote server
 write(rand_note, "new_randomization.txt", append = TRUE)
 
 
@@ -36,29 +39,46 @@ write(rand_note, "new_randomization.txt", append = TRUE)
 ### Update REDCap
 ###---------------------------###
 
-ntr <- new_to_randomize %>% mutate(arm = new_arm, randomization_notes = rand_note)
+# Document assignment arm for new participants
+ntr <- new_to_randomize 
+ntr$arm = new_arm
+
+if(notes){
+  # Generate a note to include in REDCap (if using)
+  rand_note <- paste("Record", pl$record, "assignment = ", new_arm, "probability =", prob, Sys.Date())
+  ntr[[note_name]] = rand_note # include randomization note
+}
 # write.csv(ntr, "randomized_patient.csv")
 
+# Format new observations for import into REDCap via API
+ntr_import <- ntr 
+ntr_import$redcap_event_name = "baseline_arm_1"
 
+# Establish REDCap connection
 rc_con <- redcapConnection(
   url = URL,
   token = TOKEN, # Set API token as global variable
   conn = con,
-  project = "7091",
+  project = PID,
   config = httr::config()
 )
 
+# Import new randomizations
 importRecords(
   rc_con,
-  data = ntr %>% mutate(redcap_event_name = "baseline_arm_1"), #%>% select(-race, -age),
+  data = ntr_import,
   overwriteBehavior = "normal",
   returnContent = "count"
 )
 
+# Write success message to server to track randomizations
 write(
   paste(
-    "updated RCDB with a new randomization.",
-    "\nRecord:", ntr$record_id
+    "-----------------------------------------------------\n",
+    Sys.time(), "\n",
+    " Updated RCDB with a new randomization.\n",
+    "Record(s):", ntr$record_id, "\n\n"
   ),
-  "success.txt"
+  "success.txt", 
+  append = TRUE
 )

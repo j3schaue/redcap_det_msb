@@ -39,33 +39,24 @@ con <- textConnection(rc_db)
 data <- read.csv(con, stringsAsFactors = F)
 data[data == ""] <- NA
 
-saveRDS(data, paste0("data/redcap_db_", Sys.Date(), ".RDS"))
+# Stash a version of the REDCap database on the server just in case.
+saveRDS(data, paste0("data/redcap_db.RDS"))
 
 
 ###---------------------------###
 ### Get baseline data
 ###---------------------------###
-baseline_data <- data %>%
-  filter(
-    redcap_event_name == baseline_event,
-    # consent == "I consent to be in this study." # NEED TO EDIT FOR DIFFERENT PROJECTS
-  ) %>%
-  # USER UPDATE: Some MSB data may need to be pre-processed. This can be done below.
-  # If pre-processing is not needed, delete the following lines.
-  mutate( 
-    race = factor(
-      ifelse(race___2 == "Checked",
-             "Asian",
-             ifelse(race___3 == "Checked",
-                    "Black",
-                    ifelse(race___5 == "Checked",
-                           "White",
-                           "Other")))
-    ),
-    age = difftime(Sys.Date(), as.Date(dob), units = "weeks")/52.14,
-    gender = factor(gender),
-    disease_status = factor(disease_status)
-  )
+ 
+  # Some MSB data may need to be pre-processed. This can be done below.
+  # If pre-processing is not needed, delete the following line.
+  # If addtional processing is required, you may either 
+  #     1. add to the lines below
+  #     2. modify the standardize_msb_variables function in the user_specified_variables.R script
+baseline_data <- standardize_msb_variables(
+  data[which(data$redcap_event_name == baseline_event), ], 
+  bal_covariates, 
+  bal_covariate_type
+)
 
 
 
@@ -74,11 +65,9 @@ baseline_data <- data %>%
 ###---------------------------###
 
 ###---New units are those that trigger the DET
-new_obs <- baseline_data %>%
-  filter(record_id %in% pl$record)
+new_obs <- baseline_data[which(baseline_data$record_id %in% pl$record), ]
 
-old_obs <- baseline_data %>%
-  filter(!(record_id %in% pl$record))
+old_obs <- baseline_data[which(!(baseline_data$record_id %in% pl$record)), ]
 
 # write.csv(new_obs, paste0("new_obs_", Sys.Date(), ".csv"))
 # write.csv(old_obs, paste0("old_obs_", Sys.Date(), ".csv"))
@@ -87,14 +76,14 @@ old_obs <- baseline_data %>%
 ### Check if randomization
 ### needs to occur
 ###---------------------------###
-new_to_randomize <- new_obs %>%
-  filter(
-    is.na(get(study_arm)),
-    !!randomization_ready == randomization_ready_val
-  )
+new_to_randomize <- new_obs[
+  which(is.na(new_obs[[study_arm]]) & 
+          new_obs[[randomization_ready]] == randomization_ready_val), 
+]
 
-already_randomized <- data %>%
-  filter(!!study_arm  %in% already_randomized_value)
+already_randomized <- old_obs[
+  which(old_obs[[study_arm]] %in% already_randomized_value),
+]
 
 # write.csv(new_to_randomize, "ntr.csv")
 # write.csv(already_randomized, "ar.csv")
@@ -104,11 +93,14 @@ already_randomized <- data %>%
 if(nrow(new_to_randomize) > 0){
   write(
     paste(
+      "-----------------------------------------------------\n",
+      Sys.time(), "\n",
       "There are",
       nrow(new_to_randomize),
-      "units to randomize. Running randomization script."
+      "units to randomize. Running randomization script.\n\n"
     ),
-    "out.txt"
+    "out.txt", 
+    append = TRUE
   )
   # write(getwd(), "wd.txt")
   source("randomization.R")
@@ -117,11 +109,16 @@ if(nrow(new_to_randomize) > 0){
   
   write(
     paste(
+      "-----------------------------------------------------\n",
+      Sys.time(), "\n",
       "There are no eligible units to randomize:\n",
-      new_obs %>% pull(get(study_arm)) %>% is.na() %>% sum(),
+      sum(is.na(new_obs[[study_arm]])),
       "recently modified record has yet to be randomized.\n",
-      new_obs %>% pull(get(randomization_ready)) %>% is.na() %>% sum(),
-      "recently modified records are indicated as 'Ready to randomize'."
+      sum(is.na(new_obs[[randomization_ready]])),
+      "recently modified records are indicated as 'Ready to randomize'.\n\n"
     ),
-    "out.txt")
+    "out.txt", 
+    append = TRUE
+  )
+  
 }
