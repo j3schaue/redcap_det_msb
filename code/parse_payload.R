@@ -1,4 +1,4 @@
-
+source("user_specified_variables.R")
 
 ###---------------------------###
 ### Libraries
@@ -12,7 +12,7 @@ library(RCurl)
 ###---------------------------###
 ### Get arguments from payload
 ###---------------------------###
-args <- commandArgs(trailingOnly = TRUE)
+# args <- commandArgs(trailingOnly = TRUE)
 pl <- data.frame(pid = args[1], record = args[2], instrument = args[3])
 # write.csv(pl, "args.csv")
 

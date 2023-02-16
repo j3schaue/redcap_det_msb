@@ -16,7 +16,7 @@ probs <- list(
   disease_status = c(.2, .4, .4)
 )
 
-dfs <- list(); bal <- list()
+dfs <- list(); bal <- list(); cbal <- list()
 for(i in 1:nsims){
   
   tmp <- lapply(1:N, FUN = function(x){
@@ -41,6 +41,16 @@ for(i in 1:nsims){
   tmp$arm[arm1] <- 1
   dfs[[i]] <- tmp
   
+  
+  
+  pds <- cobalt::bal.tab(
+    tmp %>% select(arm, age, rand_race, gender, disease_status), 
+    tmp$arm
+  )$Balance %>%
+    as.data.frame() %>%
+    mutate(Variable = row.names(.)) %>%
+    select(Variable, Diff.Un)
+  
   comps <- list(
     race = chisq.test(tmp$arm, tmp$rand_race),
     gender = chisq.test(tmp$arm, tmp$gender),
@@ -49,6 +59,7 @@ for(i in 1:nsims){
   )  
   
   bal[[i]] <- comps
+  cbal[[i]] <- pds %>% mutate(sim = i)
   
 }
 
