@@ -65,7 +65,7 @@ Main directory:
 - _index.php_
 - _parse_payload.R_
 - _randomization.R_
-- _source_msb.R_
+- _apply_msb.R_
 - _./data/_ subdirectory
 
      - interim results will be written to the _data/_ subdirectory from the R scripts.
