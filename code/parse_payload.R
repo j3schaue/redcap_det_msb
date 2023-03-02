@@ -46,12 +46,12 @@ saveRDS(data, paste0("data/redcap_db.RDS"))
 ###---------------------------###
 ### Get baseline data
 ###---------------------------###
- 
-  # Some MSB data may need to be pre-processed. This can be done below.
-  # If pre-processing is not needed, delete the following line.
-  # If addtional processing is required, you may either 
-  #     1. add to the lines below
-  #     2. modify the standardize_msb_variables function in the user_specified_variables.R script
+
+# Some MSB data may need to be pre-processed. This can be done below.
+# If pre-processing is not needed, delete the following line.
+# If addtional processing is required, you may either 
+#     1. add to the lines below
+#     2. modify the standardize_msb_variables function in the user_specified_variables.R script
 baseline_data <- standardize_msb_variables(
   data[which(data$redcap_event_name == baseline_event), ], 
   bal_covariates, 

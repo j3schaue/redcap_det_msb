@@ -28,7 +28,9 @@ get_balance_cts <- function(
     new_data,
     treatment, 
     variable,
-    p_cutoff = 0.3
+    p_cutoff = 0.3,
+    diff_cutoff = 0.1,
+    p_criterion = TRUE
 ){
   
   # Value for new participant
@@ -43,6 +45,7 @@ get_balance_cts <- function(
   out <- data.frame(
     var = variable, # variable name
     diff = res[2, "Estimate"], # Difference
+    smd = res[2, "Estimate"]/summary(mod)$sigma,
     ctrlmn = res[1, "Estimate"], 
     trtmn = sum(res[1:2, "Estimate"]),
     se = res[2, "Std. Error"], # SE of difference
@@ -51,12 +54,26 @@ get_balance_cts <- function(
   )
   
   # Compute whether new patient gets voted to arm 0 or arm 1
-  v1 <- ((out$p < p_cutoff) & (out$diff < 0) & (new_val > out$ctrlmn)) # Trt < Ctrl & new_val > ctrl mean
-  v0 <- ((out$p < p_cutoff) & (out$diff > 0) & (new_val < out$trtmn)) | # Trt > Ctrl & new_val < trt mean
-    ((out$p < p_cutoff) & (out$diff < 0) & (new_val > out$trtmn)) # Trt < Ctrl & new_val > trt mean
+  if(p_criterion){
+    v1 <- ((out$p < p_cutoff) & (out$diff < 0) & (new_val > out$ctrlmn)) |  # Trt < Ctrl & new_val > ctrl mean
+      ((out$p < p_cutoff) & (out$diff > 0) & (new_val < out$ctrlmn)) # Trt > Ctrl & new_val < ctrl mean
+    v0 <- ((out$p < p_cutoff) & (out$diff > 0) & (new_val > out$trtmn)) | # Trt > Ctrl & new_val > trt mean
+      ((out$p < p_cutoff) & (out$diff < 0) & (new_val < out$trtmn)) # Trt < Ctrl & new_val < trt mean
+  } else {
+    v1 <- ((abs(out$smd) > diff_cutoff) & (out$diff < 0) & (new_val > out$ctrlmn)) |  # Trt < Ctrl & new_val > ctrl mean
+      ((abs(out$smd) > diff_cutoff) & (out$diff > 0) & (new_val < out$ctrlmn)) # Trt > Ctrl & new_val < ctrl mean
+    v0 <- ((abs(out$smd) > diff_cutoff) & (out$diff > 0) & (new_val > out$trtmn)) | # Trt > Ctrl & new_val > trt mean
+      ((abs(out$smd) > diff_cutoff) & (out$diff < 0) & (new_val < out$trtmn)) # Trt < Ctrl & new_val < trt mean
+  }
   
   # Compute final vote
-  vote <- ifelse(v1, "Arm 1", ifelse(v0, "Arm 0", "Neutral"))
+  if(v1 & v0){
+    vote <- "Neutral"
+  } else if(v1) {
+    vote <- "Arm 1"
+  } else if(v0){
+    vote <- "Arm 0" 
+  } else { vote <- "Neutral" }
   
   return(
     list(
@@ -85,12 +102,12 @@ get_balance_cat <- function(
   # New participant value
   new_val <- new_data[[variable]]
   
-  if(sum(data[[variable]] == new_val)){
+  if(sum(data[[variable]] == new_val) == 0){
     
     vote = "Neutral"; out = "New level detected"
     
   } else {
-  
+    
     # Compute balance stats
     mod <- chisq.test(data[[variable]], data[[treatment]])
     
@@ -102,13 +119,22 @@ get_balance_cat <- function(
       diff = list(mod$observed - mod$expected),
       stat = mod$statistic,
       p = mod$p.value
-      )
+    )
     
     nv <- paste(new_val)
     # Compute and return vote
     v0 <- (out$p < p_cutoff & out$expected[[1]][nv, 1] > out$observed[[1]][nv, 1])
     v1 <- (out$p < p_cutoff & out$expected[[1]][nv, 2] > out$observed[[1]][nv, 2])
-    vote <- ifelse(v1, "Arm 1", ifelse(v0, "Arm 0", "Neutral"))
+    
+    # Compute final vote
+    if(v1 & v0){
+      vote <- "Neutral"
+    } else if(v1) {
+      vote <- "Arm 1"
+    } else if(v0){
+      vote <- "Arm 0" 
+    } else { vote <- "Neutral" }
+    
   }
   return(
     list(
@@ -127,11 +153,11 @@ get_balance_cat <- function(
 #' @param p_cutoff numeric (positive (0, 1)) indicates the p-value of the test for covariate balance required for MSB intervention 
 #' @value list with two entries: 'results', a DF containing balance metrics for 'variable' in 'data' and 'vote', which indicates vote for MSB allocation.
 get_balance_center <- function(
-  data, 
-  new_data,
-  treatment,
-  center,
-  p_cutoff = 0.3
+    data, 
+    new_data,
+    treatment,
+    center,
+    p_cutoff = 0.3
 ){
   
   new_center <- new_data[[center]]
@@ -148,7 +174,7 @@ get_balance_center <- function(
     dc <- data.frame(
       trt = as.numeric(names(dc_tmp)), 
       n = as.vector(dc_tmp)
-      )
+    )
     
     # Check that there are at least 3 participants 
     # in each arm in the new center
@@ -192,15 +218,18 @@ get_votes <- function(data, new_data, # data
                       center = NULL, covariates, treatment, # variable names
                       min_n_adapt = 10,
                       prob_vote = 0.7, # probability split for majority arm
+                      p_cutoff = 0.3, 
+                      diff_cutoff = 0.1,
+                      p_criterion = TRUE,
                       show_votes = F){ # output options
   
   
   if(nrow(data) < min_n_adapt){
     
     prob = .5
-    votes = NULL
+    total_vote = NULL
     majority = NULL
-      
+    
   } else {
     
     overall_vote <- list()
@@ -215,18 +244,14 @@ get_votes <- function(data, new_data, # data
     overall_vote[["overall"]] <- vote
     
     if(!is.null(center)){
-
+      
       center_info <- get_balance_center(data, new_data, treatment, center, p_cutoff)
-
+      
     } else {
-
+      
       center_info <- list(results = NULL, vote = "Neutral")
-
+      
     }
-    
-    
-    
-    
     
     for(j in covariates){
       
@@ -236,14 +261,24 @@ get_votes <- function(data, new_data, # data
         
       } else if(is.numeric(data[[j]])){
         
-        if(nrow(data) <= 4 | length(unique(data[,paste(treatment)])) == 1){
+        if(nrow(data) <= 4 | length(unique(data[[treatment]])) == 1){
           
           vote <- "Neutral"
+          bal_results <- NULL
           
         } else {
           
-           var_info <- get_balance_cts(data, new_data, treatment, j, p_cutoff)
-           vote <- var_info$vote
+          var_info <- get_balance_cts(
+            data, 
+            new_data, 
+            treatment, 
+            j, 
+            p_cutoff,
+            diff_cutoff, 
+            p_criterion
+          )
+          vote <- var_info$vote
+          bal_results <- var_info$results
           
         }
         
@@ -253,11 +288,13 @@ get_votes <- function(data, new_data, # data
            (length(unique(data[[treatment]])) == 1)){
           
           vote <- "Neutral"
+          bal_results <- NULL
           
         } else {
           
           var_info <- get_balance_cat(data, new_data, treatment, j, p_cutoff)
           vote <- var_info$vote
+          bal_results <- var_info$results
           
         }
         
@@ -296,21 +333,22 @@ get_votes <- function(data, new_data, # data
       prob <- 1 - prob_vote
     }
     
-    if(show_votes){
-      
-      return(
-        list(
-          prob = prob,
-          votes = total_vote,
-          majority = majority
-        )
+  }
+  
+  if(show_votes){
+    
+    return(
+      list(
+        prob = prob,
+        votes = total_vote,
+        majority = majority
       )
-      
-    } else {
-      
-      return(prob)
-      
-    }
+    )
+    
+  } else {
+    
+    return(prob)
+    
   }
   
 }
@@ -347,14 +385,14 @@ generate_assignment <- function(prob){
 #                       min_n_adapt = 10,
 #                       prob_vote = 0.7, # probability split for majority arm
 #                       show_votes = F){ # output options
-  
-  
+
+
 #   if(nrow(data) < min_n_adapt){
-    
+
 #     prob = .5
-    
+
 #     if(show_votes){
-      
+
 #       return(
 #         list(
 #           prob = prob,
@@ -362,46 +400,46 @@ generate_assignment <- function(prob){
 #           majority = NULL
 #         )
 #       )
-      
+
 #     } else {
-      
+
 #       return(prob)
-      
+
 #     }
 #   } else {
 #     overall_vote <- list()
 #     center_vote <- list()
 #     mean_vote <- list()
-    
+
 #     dtrt <- data %>%
 #       summarize(pct_trt = mean(get(treatment)))
-    
+
 #     vote <- ifelse(dtrt > 0.5, "Arm 0",
 #                    ifelse(dtrt < 0.5, "Arm 1", "Neutral"))
-    
+
 #     overall_vote[["overall"]] <- vote
-    
+
 #     new_center <- new_data %>% select(get(center)) %>% pull()
-    
+
 #     # Summarize assignment within center of interest
 #     dc <- data %>%
 #       filter(.data[[center]] == new_center) %>%
 #       summarize(x = sum(get(treatment)), n = n())
-    
+
 #     # Check if this is a brand new center
 #     # or if patients have already been
 #     # randomized in this center.
 #     if(dc$n == 0){
-      
+
 #       vote <- "Neutral"
 #       center_vote[[paste("center")]] <- vote
-      
-      
+
+
 #     } else {
-      
+
 #       # Get p-value
 #       bt <- binom.test(dc$x, dc$n)
-      
+
 #       # Compute and return vote for arm
 #       v0 <- (bt$p.value < 0.3 & dc$x/dc$n < 0.5)
 #       v1 <- (bt$p.value < 0.3 & dc$x/dc$n > 0.5)
@@ -409,25 +447,25 @@ generate_assignment <- function(prob){
 #                      ifelse(v1, "Arm 1", "Neutral"))
 #       center_vote[["center"]] <- vote
 #     }
-    
+
 #     for(j in covariates){
-      
+
 #       if(nrow(data) == 1){
-        
+
 #         vote <- "Neutral"
-        
+
 #       } else if(is.numeric(data[[j]])){
-        
+
 #         if(nrow(data) <= 4 | length(unique(data[,paste(treatment)])) == 1){
-          
+
 #           vote <- "Neutral"
-          
+
 #         } else {
-          
+
 #           # Compute balance using linear model
 #           mod <- lm(data[[j]] ~ data[[treatment]])
 #           res <- summary(mod)$coefficients
-          
+
 #           # Formulate output as tibble
 #           out <- tibble(
 #             var = j, # variable name
@@ -436,44 +474,44 @@ generate_assignment <- function(prob){
 #             stat = res[2, "t value"], # test statistic
 #             p = res[2, "Pr(>|t|)"] # p-value
 #           )
-          
+
 #           x_sum <- data %>%
 #             group_by(get(treatment)) %>%
 #             summarize(x = mean(get(j), na.rm = T)) %>%
 #             rename(treatment = `get(treatment)`)
-          
+
 #           x1 <- x_sum %>%
 #             filter(treatment == 1) %>%
 #             pull(x)
-          
+
 #           x0 <- x_sum %>%
 #             filter(treatment == 0) %>%
 #             pull(x)
-          
+
 #           new_col_name <- new_data %>% pull(get(j))
-          
+
 #           # Compute whether new patient gets voted to arm 0 or arm 1
 #           v1 <- ((out$p < 0.3) & (out$diff > 0) & (new_col_name < x0)) |
 #             ((out$p < 0.3) & (out$diff < 0) & (new_col_name > x0))
 #           v0 <- ((out$p < 0.3) & (out$diff > 0) & (new_col_name < x1)) |
 #             ((out$p < 0.3) & (out$diff < 0) & (new_col_name > x1))
-          
+
 #           # Return vote
 #           vote <- ifelse(v1, "Arm 1", ifelse(v0, "Arm 0", "Neutral"))
-          
+
 #         }
-        
+
 #       } else if(is.factor(data[[j]])){
-        
+
 #         if((length(unique(data[[j]])) == 1) |
 #            (length(unique(data[[treatment]])) == 1)){
-          
+
 #           vote <- "Neutral"
-          
+
 #         } else {
-          
+
 #           mod <- chisq.test(data[[treatment]], data[[j]])
-          
+
 #           # Format output as table
 #           out <- tibble(
 #             var = j,
@@ -482,41 +520,41 @@ generate_assignment <- function(prob){
 #             diff = list(mod$observed - mod$expected),
 #             stat = mod$statistic,
 #             p = mod$p.value)
-          
+
 #           new_col_name <- new_data %>% select(get(j)) %>% pull()
-          
+
 #           # Compute and return vote
 #           v0 <- (out$p < 0.3 & out$expected[[1]][new_col_name, 1] > out$observed[[1]][new_col_name, 1])
 #           v1 <- (out$p < 0.3 & out$expected[[1]][new_col_name, 2] > out$observed[[1]][new_col_name, 2])
 #           vote <- ifelse(v1, "Arm 1", ifelse(v0, "Arm 0", "Neutral"))
-          
+
 #         }
-        
+
 #       }
-      
+
 #       mean_vote[[paste(j)]] <- vote
-      
+
 #     }
-    
+
 #     total_vote <- t(as.data.frame(c(overall_vote, center_vote, mean_vote)))
 #     #return(t(as.data.frame(total_vote)))
-    
+
 #     vote_tab <- as.data.frame(table(total_vote))
-    
+
 #     vt <- vote_tab %>% filter(total_vote != "Neutral")
-    
+
 #     if(nrow(vt) == 0){
-      
+
 #       majority = NULL
-      
+
 #     } else {
-      
+
 #       majority <- as.character(vt$total_vote[vote_tab$Freq == max(vt$Freq)])
 #       majority <- majority[!is.na(majority)]
-      
+
 #     }
-    
-    
+
+
 #     if(is.null(majority) | length(majority) > 1){
 #       prob <- 0.5
 #     } else if(majority == "Neutral"){
@@ -526,9 +564,9 @@ generate_assignment <- function(prob){
 #     } else {
 #       prob <- 1 - prob_vote
 #     }
-    
+
 #     if(show_votes){
-      
+
 #       return(
 #         list(
 #           prob = prob,
@@ -536,14 +574,14 @@ generate_assignment <- function(prob){
 #           majority = majority
 #         )
 #       )
-      
+
 #     } else {
-      
+
 #       return(prob)
-      
+
 #     }
 #   }
-  
+
 # }
 
 # prob <- get_votes(center, covariates, treatment, data, new_data)

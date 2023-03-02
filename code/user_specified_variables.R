@@ -54,7 +54,7 @@ bal_covariate_type <- lapply(bal_covariate_type,
 
 
 # REDCap API token and relevant URL
-token = "C5F34F5E0C5CD89D71A9C47DD086D165"
+token = ""
 URL <- "https://redcap.nubic.northwestern.edu/redcap/api/"
 
 
@@ -90,7 +90,7 @@ standardize_msb_variables <- function(data, bal_covariates, bal_covariate_type){
     )
   
   return(out)
-    
+  
 }
 
 
