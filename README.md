@@ -9,14 +9,18 @@ The code is structured to run on a secure server, with the following scripts man
 - _index.php_ Listens for DET payloads sent to the secure server. 
 
      - This script must be edited and tailored to specific REDCap projects, but should contain the REDCap PID and relevant instrument names.
+     
+- _user_specified_variables.R_
 
+     - This script must be tailored to specific REDCap projects. 
+     
 - _parse_payload.R_
 
-     - This script must be tailored to specific REDCap projects. The opening lines contain modifiable arguments used in subsequent code. 
+     - This script can be tailored to specific REDCap projects but you should start by modifying the _user_specified_variables.R_ script first. 
 
 - _randomization.R_
 
-     - This script can be updated 
+     - This script can be modified in needed 
 
 - _source_msb.R_
 
@@ -32,20 +36,23 @@ It also assumes the following:
 
 1. The REDCap database contains a separate instrument within the REDCap project is designated for identifying participants ready for randomization.
 
-     a. Since randomization leverages the MSB algorithm, baseline measures must exist for the randomized and ready-to-be-randomized participants alike. As a means of quality control, we recommend (and the code requires) a designated instrument (see _instrument_ in _index.php_) and field (see _randomization_ready_ in _parse_payload.R_) that indicates a patient should indeed be randomized immediately.
+     a. Since randomization leverages the MSB algorithm, baseline measures must exist for the randomized and ready-to-be-randomized participants alike. As a means of quality control, we recommend (and the code requires) a designated instrument (see _instrument_ in _index.php_) and field (see _randomization_ready_ in _user_specified_variables.R_) that indicates a patient should indeed be randomized immediately.
 
 2. No data used in the MSB is missing. 
 
-     a. MSB balances individual covariates (specified in _bal_covariates_ in _parse_payload.R_) for a participant. No randomized or ready-to-be-randomized participants should be missing any data for those covariates.
+     a. MSB balances individual covariates (specified in _bal_covariates_ in _user_specified_variables.R_) for a participant. No randomized or ready-to-be-randomized participants should be missing any data for those covariates.
      
 3. The REDCap database contains multiple events and that MSB covariates are stored in the baseline event.
 
-     a. Users must specify the baseline event name from REDCap.
+     a. Users must specify the baseline event name from REDCap (_user_specified_variables.R_).
      b. Code can be easily modified for data without repeat instances/different event names.
 
 4. The REDCap project contains a designated field for the following:
 
-     a. Study arm (_study_arm_ in _parse_payload.R_) 
+     a. Study arm (_study_arm_ in _user_specified_variables.R_) 
+          
+          - We assume that 1 = "Treatment" and 0 = "Control". If this does not align with the REDCap codebook, the _randomization.R_ script will need to be modified.
+    
      b. Randomization probability _rand_prob_field_
      c. Randomization votes _rand_votes_field_ 
 
@@ -66,6 +73,7 @@ Main directory:
 - _parse_payload.R_
 - _randomization.R_
 - _apply_msb.R_
+- _user_specified_variables.R_
 - _./data/_ subdirectory
 
      - interim results will be written to the _data/_ subdirectory from the R scripts.
