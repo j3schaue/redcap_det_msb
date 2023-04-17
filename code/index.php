@@ -8,8 +8,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
   $uname = $_POST['username'];
   $rid = $_POST['record'];
   $instrument = $_POST['instrument'];
-  $status = $_POST['eligibility_complete'];
-
+  
   if ( $pid == 7130 && $instrument == "randomization" ) { // USER UPDATE: User must modify the PID and instrument to correspond to their REDCap build.
     shell_exec("Rscript parse_payload.R $pid $rid $instrument $status 2> logfile.txt");
   } else {

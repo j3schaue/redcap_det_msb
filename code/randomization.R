@@ -30,10 +30,6 @@ prob <- get_votes(
 # Generate new random assignment
 new_arm <- generate_assignment(prob)
 
-# Document on text file on remote server
-write(rand_note, "new_randomization.txt", append = TRUE)
-
-
 
 ###---------------------------###
 ### Update REDCap
@@ -44,15 +40,26 @@ ntr <- new_to_randomize
 ntr$arm = new_arm
 
 if(notes){
+  
   # Generate a note to include in REDCap (if using)
   rand_note <- paste("Record", pl$record, "assignment = ", new_arm, "probability =", prob, Sys.Date())
+  if(length(rand_note) > 1){
+    rand_note <- paste(rand_note, collapse = "\n")
+  }
+  
   ntr[[note_name]] = rand_note # include randomization note
 }
-# write.csv(ntr, "randomized_patient.csv")
+
+# Document new randomization on remote server
+write.csv(ntr, "randomized_patient.csv", append = TRUE)
+
+# Document randomization note on text file on remote server
+write(rand_note, "new_randomization.txt", append = TRUE)
+
 
 # Format new observations for import into REDCap via API
 ntr_import <- ntr 
-ntr_import$redcap_event_name = "baseline_arm_1"
+ntr_import$redcap_event_name = baseline_event
 
 # Establish REDCap connection
 rc_con <- redcapConnection(
