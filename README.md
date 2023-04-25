@@ -35,8 +35,10 @@ It also assumes the following:
 
      a. Scripts can be amended easily for use with single-center studies.
      
-     
-# DET Configuration
+
+# Configurations {.tabset}
+
+## DET Configuration
 
 The key scripts for DET integration of MSB are in the _det/_ directory as follows:
 
@@ -61,7 +63,7 @@ The key scripts for DET integration of MSB are in the _det/_ directory as follow
 In this workflow, R interacts with the REDCap database via the REDcap API. Tokens are not stored publicly on this repository.
 
 
-## Server File Setup
+### Server File Setup
 
 These scripts are designed to run on a secure server. 
 The directory structure on the server should be as follows:
@@ -79,7 +81,7 @@ Main directory:
      
      
      
-# Scheduler Configuration
+## Scheduler Configuration
 
 The key scripts for setting up MSB via scheduler are in the _scheduler/_ directory as follows:
 
@@ -110,7 +112,7 @@ Both of these will need to be modified to suit the parameters of the REDCap proj
 
 
 
-## Server File Setup
+### Server File Setup
 
 These scripts are designed to run on a secure server. 
 The directory structure on the server should be as follows:
