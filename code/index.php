@@ -9,7 +9,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
   $rid = $_POST['record'];
   $instrument = $_POST['instrument'];
   
-  if ( $pid == 7130 && $instrument == "randomization" ) { // USER UPDATE: User must modify the PID and instrument to correspond to their REDCap build.
+  if ( $pid == 7091 && $instrument == "randomization" ) { // USER UPDATE: User must modify the PID and instrument to correspond to their REDCap build.
     shell_exec("Rscript parse_payload.R $pid $rid $instrument $status 2> logfile.txt");
   } else {
     shell_exec("echo 'DET received from wrong PID $pid or instrument $instrument' | tee wrong_pids.txt");

@@ -22,7 +22,7 @@ The code is structured to run on a secure server, with the following scripts man
 
      - This script can be modified in needed 
 
-- _source_msb.R_
+- _apply_msb.R_
 
 In this workflow, R interacts with the REDCap database via the REDcap API. Tokens are not stored publicly on this repository.
 
@@ -47,14 +47,14 @@ It also assumes the following:
      a. Users must specify the baseline event name from REDCap (_user_specified_variables.R_).
      b. Code can be easily modified for data without repeat instances/different event names.
 
-4. The REDCap project contains a designated field for the following:
+4. The REDCap project contains a designated field for the following, which are specified in the in _user_specified_variables.R_ file.
 
-     a. Study arm (_study_arm_ in _user_specified_variables.R_) 
+     a. Study arm (_study_arm_) 
           
-          - We assume that 1 = "Treatment" and 0 = "Control". If this does not align with the REDCap codebook, the _randomization.R_ script will need to be modified.
+          - This directory assumes a two-armed randomized trial. Values can be specified in the _already_randomized_value_ field, which assumes a strict ordering. 
     
-     b. Randomization probability _rand_prob_field_
-     c. Randomization votes _rand_votes_field_ 
+     b. Randomization probability _prob_name_
+     c. Randomization votes _vote_name_ 
 
 5. The REDCap project in question is for a multi-center study. 
 

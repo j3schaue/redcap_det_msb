@@ -1,43 +1,47 @@
-source("user_specified_variables.R")
-
 ###---------------------------###
 ### Libraries
 ###---------------------------###
 library(dplyr)
 library(tidyr)
 library(redcapAPI)
-library(RCurl)
+
+
+###---------------------------###
+### Get arguments specified by
+###   user based on REDCap project
+###---------------------------###
+source("user_specified_variables.R")
 
 
 ###---------------------------###
 ### Get arguments from payload
 ###---------------------------###
-# args <- commandArgs(trailingOnly = TRUE)
+args <- commandArgs(trailingOnly = TRUE)
 pl <- data.frame(pid = args[1], record = args[2], instrument = args[3])
-# write.csv(pl, "args.csv")
+pl$time <- Sys.time()
+
+# Write arguments to file to log all relevant activity
+write.csv(pl, "args.csv", append = TRUE)
 
 
 ###---------------------------###
 ### Read in REDCap data
 ###---------------------------###
-rc_db <- postForm(
-  uri=URL,
-  token=token,
-  content='record',
-  format='csv',
-  type='flat',
-  rawOrLabel='label',
-  #rawOrLabel='raw',
-  rawOrLabelHeaders='raw',
-  exportCheckboxLabel='false',
-  exportSurveyFields='false',
-  exportDataAccessGroups='false',
-  returnFormat='json'
+
+# Establish REDCap connection
+rc_con <- redcapConnection(
+  url = URL,
+  token = token, # Set API token as global variable
+  conn = con,
+  project = PID,
+  config = httr::config()
 )
 
-con <- textConnection(rc_db)
-data <- read.csv(con, stringsAsFactors = F)
-data[data == ""] <- NA
+# Read in data
+data <- exportRecords(
+  rc_con
+)
+
 
 # Stash a version of the REDCap database on the server just in case.
 saveRDS(data, paste0("data/redcap_db.RDS"))
@@ -48,15 +52,15 @@ saveRDS(data, paste0("data/redcap_db.RDS"))
 ###---------------------------###
 
 # Some MSB data may need to be pre-processed. This can be done below.
-# If pre-processing is not needed, delete the following line.
 # If addtional processing is required, you may either 
 #     1. add to the lines below
 #     2. modify the standardize_msb_variables function in the user_specified_variables.R script
-baseline_data <- standardize_msb_variables(
-  data[which(data$redcap_event_name == baseline_event), ], 
-  bal_covariates, 
-  bal_covariate_type
-)
+baseline_data <- data[which(data$redcap_event_name == baseline_event), ]
+# standardize_msb_variables(
+#   data[which(data$redcap_event_name == baseline_event), ],
+#   bal_covariates,
+#   bal_covariate_type
+# )
 
 
 
@@ -67,6 +71,7 @@ baseline_data <- standardize_msb_variables(
 ###---New units are those that trigger the DET
 new_obs <- baseline_data[which(baseline_data$record_id %in% pl$record), ]
 
+###---Units that did not trigger the MSB
 old_obs <- baseline_data[which(!(baseline_data$record_id %in% pl$record)), ]
 
 # write.csv(new_obs, paste0("new_obs_", Sys.Date(), ".csv"))
@@ -102,7 +107,7 @@ if(nrow(new_to_randomize) > 0){
     "out.txt", 
     append = TRUE
   )
-  # write(getwd(), "wd.txt")
+
   source("randomization.R")
   
 } else {
