@@ -49,9 +49,7 @@ It also assumes the following:
 
 4. The REDCap project contains a designated field for the following, which are specified in the in _user_specified_variables.R_ file.
 
-     a. Study arm (_study_arm_) 
-          
-          - This directory assumes a two-armed randomized trial. Values can be specified in the _already_randomized_value_ field, which assumes a strict ordering. 
+     a. Study arm (_study_arm_): This directory assumes a two-armed randomized trial. Values can be specified in the _already_randomized_value_ field, which assumes a strict ordering. 
     
      b. Randomization probability _prob_name_
      c. Randomization votes _vote_name_ 
