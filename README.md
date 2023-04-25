@@ -38,7 +38,7 @@ It also assumes the following:
      
 # DET Configuration
 
-The key scripts for DET integration of MSB are as follows:
+The key scripts for DET integration of MSB are in the _det/_ directory as follows:
 
 - _index.php_ Listens for DET payloads sent to the secure server. 
 
@@ -81,7 +81,7 @@ Main directory:
      
 # Scheduler Configuration
 
-The key scripts for setting up MSB via scheduler are as follows:
+The key scripts for setting up MSB via scheduler are in the _scheduler/_ directory as follows:
 
      
 - _user_specified_variables.R_
