@@ -36,7 +36,7 @@ It also assumes the following:
      a. Scripts can be amended easily for use with single-center studies.
      
 
-# Configurations {.tabset}
+# Configurations 
 
 ## DET Configuration
 
