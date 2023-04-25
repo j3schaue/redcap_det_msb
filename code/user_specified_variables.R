@@ -10,6 +10,10 @@
 # Project ID in REDCap
 PID <- "7091"
 
+###---------------------------------------------###
+### Info on randomization variable and levels
+###---------------------------------------------###
+
 # Column name indicating study arm
 # We know that a participant is randomized if
 #     study_arm %in% already_randomized_val
@@ -28,9 +32,20 @@ already_randomized_value = list(
 randomization_ready = "randomize"
 randomization_ready_val = "Yes"
 
-# For repeated measures at different timelines,
-# we need to collect baseline data for MSB algorithm
-baseline_event = "baseline_arm_1"
+
+###---------------------------------------------###
+### Info on covariates on which we want balance
+###---------------------------------------------###
+
+# Column name for stratification variables
+# Change to c("variable_name") to indicate REDCap variable name
+# If no stratification is used prior to MSB, then leave the value as NULL
+stratification_variables <- NULL
+# Note that stratification is only recommended if strata N>75-100 minimum
+
+# If you are not stratifying on center, but want within-center balance, then specify
+# the column name in REDCap here.
+study_center = "center" 
 
 # List of covariates on which to maintin balance
 bal_covariates = c(
@@ -38,7 +53,6 @@ bal_covariates = c(
   # compute balance
   "age", "rand_race", "gender", "disease_status"
 )
-study_center = "center" # Used for multi-center trials
 
 # List of variable types (numeric, factor) 
 # that correspond to the bal_covariates above
@@ -47,10 +61,24 @@ bal_covariate_type <- list(
 )
 
 
+
+###---------------------------------------------###
+### Info on REDCap project
+###---------------------------------------------###
+
+# For repeated measures at different timelines,
+# we need to collect baseline data for MSB algorithm
+baseline_event = "baseline_arm_1"
+
 # REDCap API token and relevant URL
 token = ""
 URL <- "https://redcap.nubic.northwestern.edu/redcap/api/"
 
+
+
+###---------------------------------------------###
+### Info on MSB algorithm
+###---------------------------------------------###
 
 # Sample size required before starting adaptive randomization
 min_n_algorithm <- 20 
@@ -75,6 +103,7 @@ prob_name <- "rand_prob"
 
 
 
+
 ###----------------------------------------------------###
 ### Sanitize/Standardize Balance Covariates
 ###
@@ -83,6 +112,13 @@ prob_name <- "rand_prob"
 ### types listed above and any rules specified for 
 ### collapsing or labelling categories.
 ###----------------------------------------------------###
+
+# Check for clash between center in MSB vs. center stratification
+if(study_center %in% stratification_variables){
+  study_center <- NULL
+  print("STUDY CENTER WILL BE STRATIFIED ON AND NOT INCLUDED IN MSB CALCULATIONS.")
+}
+
 
 bal_covariate_type <- lapply(bal_covariate_type,
                              FUN = function(x) paste0("as.", x)

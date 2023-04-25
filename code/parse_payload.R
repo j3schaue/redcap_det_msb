@@ -90,6 +90,24 @@ already_randomized <- old_obs[
   which(old_obs[[study_arm]] %in% already_randomized_value),
 ]
 
+
+### If stratification occurs first, we must select only the already-randomized participants
+### who are in the same stratum as the new participant.
+if(!is.null(stratification_variables)){
+  
+  svs <- sapply(
+    stratification_variables, 
+    FUN = function(x) new_to_randomize[[x]])
+  
+  stratification_levels <- as.data.frame(t(as.matrix(svs)))
+  
+  arand <- already_randomized 
+  for(vv in stratification_variables){
+    arand <- arand[arand[[vv]] == stratification_levels[[vv]], ]
+  }
+  
+  already_randomized <- arand
+}
 # write.csv(new_to_randomize, "ntr.csv")
 # write.csv(already_randomized, "ar.csv")
 
