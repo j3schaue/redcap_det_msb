@@ -2,31 +2,7 @@
 
 This repository contains base code to link REDCap data entry triggers to algorithms to randomize participants in randomized experiments. 
 The focus is on the Minimal Sufficient Balance (MSB) algorithm. 
-
-
-The code is structured to run on a secure server, with the following scripts managing interactions with REDCap's data entry trigger:
-
-- _index.php_ Listens for DET payloads sent to the secure server. 
-
-     - This script must be edited and tailored to specific REDCap projects, but should contain the REDCap PID and relevant instrument names.
-     
-- _user_specified_variables.R_
-
-     - This script must be tailored to specific REDCap projects. 
-     
-- _parse_payload.R_
-
-     - This script can be tailored to specific REDCap projects but you should start by modifying the _user_specified_variables.R_ script first. 
-
-- _randomization.R_
-
-     - This script can be modified in needed 
-
-- _apply_msb.R_
-
-In this workflow, R interacts with the REDCap database via the REDcap API. Tokens are not stored publicly on this repository.
-
-
+There are two directories that offer implementation through REDCap's data entry trigger (DET) or via a scheduler.
 
 
 # REDCap Project Setup
@@ -58,10 +34,34 @@ It also assumes the following:
 5. The REDCap project in question is for a multi-center study. 
 
      a. Scripts can be amended easily for use with single-center studies.
+     
+     
+# DET Configuration
+
+The key scripts for DET integration of MSB are as follows:
+
+- _index.php_ Listens for DET payloads sent to the secure server. 
+
+     - This script must be edited and tailored to specific REDCap projects, but should contain the REDCap PID and relevant instrument names.
+     
+- _user_specified_variables.R_
+
+     - This script must be tailored to specific REDCap projects. 
+     
+- _parse_payload.R_
+
+     - This script can be tailored to specific REDCap projects but you should start by modifying the _user_specified_variables.R_ script first. 
+
+- _randomization.R_
+
+     - This script can be modified in needed 
+
+- _apply_msb.R_
+
+In this workflow, R interacts with the REDCap database via the REDcap API. Tokens are not stored publicly on this repository.
 
 
-
-# Server File Setup
+## Server File Setup
 
 These scripts are designed to run on a secure server. 
 The directory structure on the server should be as follows:
@@ -79,4 +79,50 @@ Main directory:
      
      
      
-  
+# Scheduler Configuration
+
+The key scripts for setting up MSB via scheduler are as follows:
+
+     
+- _user_specified_variables.R_
+
+     - This script must be tailored to specific REDCap projects. 
+     
+- _parse_data.R_
+
+     - This script can be tailored to specific REDCap projects but you should start by modifying the _user_specified_variables.R_ script first. 
+
+- _randomization.R_
+
+     - This script can be modified in needed 
+
+- _apply_msb.R_
+
+In this workflow, R interacts with the REDCap database via the REDcap API. Tokens are not stored publicly on this repository.
+
+In addition, basic scripts germane to the scheduler are also in this repository including:
+
+- _scheduled_randomization.bat_ which should trigger the MSB _.R_ scripts above.
+
+- _notify.py_ which will email relevant parties about the completion of MSB randomization.
+
+Both of these will need to be modified to suit the parameters of the REDCap project.
+
+
+
+## Server File Setup
+
+These scripts are designed to run on a secure server. 
+The directory structure on the server should be as follows:
+
+Main directory: 
+
+- _parse_data.R_
+- _randomization.R_
+- _apply_msb.R_
+- _user_specified_variables.R_
+- _scheduled_randomization.bat_
+- _notify.py_
+- _./data/_ subdirectory
+
+     - interim results will be written to the _data/_ subdirectory from the R scripts.
