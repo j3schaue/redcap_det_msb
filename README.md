@@ -51,7 +51,7 @@ It also assumes the following:
 
      a. Study arm (_study_arm_) 
           
-        - This directory assumes a two-armed randomized trial. Values can be specified in the _already_randomized_value_ field, which assumes a strict ordering. 
+          - This directory assumes a two-armed randomized trial. Values can be specified in the _already_randomized_value_ field, which assumes a strict ordering. 
     
      b. Randomization probability _prob_name_
      c. Randomization votes _vote_name_ 
