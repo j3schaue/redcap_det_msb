@@ -181,11 +181,11 @@ get_balance_center <- function(
     if(sum(dc$n > 2) == nrow(dc)){
       
       # Get p-value
-      bt <- binom.test(dc$n, dc$trt)
+      bt <- binom.test(dc$n)
       
       # Compute and return vote for arm
-      v0 <- as.logical((bt$p.value < p_cutoff) & (dc$trt[1]/dc$n[1] < 0.5))
-      v1 <- ((bt$p.value < p_cutoff) & (dc$trt[2]/dc$n[2] > 0.5))
+      v0 <- as.logical((bt$p.value < p_cutoff) & (dc$n[dc$trt==0]/sum(dc$n) < 0.5))
+      v1 <- ((bt$p.value < p_cutoff) & (dc$n[dc$trt==1]/sum(dc$n) < 0.5))
       vote <- ifelse(v0, "Arm 0",
                      ifelse(v1, "Arm 1", "Neutral"))
       

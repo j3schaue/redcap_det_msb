@@ -9,7 +9,7 @@
 ###    bal_covariates: list of strings indicating variable names for balance
 ###    study_center: string indicating variable name for center.
 ###    study_arm: string indicating variable name for study arm.
-###    min_n_algorithm: interger Sample size required before starting adaptive randomization
+###    min_n_algorithm: integer Sample size required before starting adaptive randomization
 ###------------------------------------------------------------------------------------###
 ###------------------------------------------------------------------------------------###
 ###------------------------------------------------------------------------------------###
