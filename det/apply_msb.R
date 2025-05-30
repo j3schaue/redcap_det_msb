@@ -90,7 +90,7 @@ get_balance_cts <- function(
 #' @param treatment string indicating which column in 'data' tracks the treatment assignment
 #' @param variable string indicating on which column to compute balance
 #' @param p_cutoff numeric (positive (0, 1)) indicates the p-value of the test for covariate balance required for MSB intervention 
-#' @param diff_cutoff numeric (positive (0, 1)) indicates the imbalance on the scale of the absolute risk difference in a given category for MSB intervention.
+#' @param rd_cutoff numeric (positive (0, 1)) indicates the imbalance on the scale of the absolute risk difference in a given category for MSB intervention.
 #' @param p_criterion boolean indicates whether to use p-value or risk difference for MSB intervention criteria
 #' @value list with two entries: 'results', a DF containing balance metrics for 'variable' in 'data' and 'vote', which indicates vote for MSB allocation.
 get_balance_cat <- function(
@@ -99,7 +99,7 @@ get_balance_cat <- function(
     treatment, 
     variable,
     p_cutoff = 0.3,
-    diff_cutoff = 0.1,
+    rd_cutoff = 0.1,
     p_criterion = TRUE
 ){
   
@@ -148,8 +148,8 @@ get_balance_cat <- function(
       
       
       # Vote for control if there is a higher proportion in Trt vs. Ctrl (to increase ctrl proportion)
-      v0 <- ((abs(out$diff) > diff_cutoff) & (out$diff > 0))
-      v1 <- ((abs(out$diff) > diff_cutoff) & (out$diff < 0))
+      v0 <- ((abs(out$diff) > rd_cutoff) & (out$diff > 0))
+      v1 <- ((abs(out$diff) > rd_cutoff) & (out$diff < 0))
       
     }
     
@@ -247,6 +247,7 @@ get_votes <- function(data, new_data, # data
                       prob_vote = 0.7, # probability split for majority arm
                       p_cutoff = 0.3, 
                       diff_cutoff = 0.1,
+                      rd_cutoff = 0.1,
                       p_criterion = TRUE,
                       show_votes = F){ # output options
   
@@ -319,7 +320,15 @@ get_votes <- function(data, new_data, # data
           
         } else {
           
-          var_info <- get_balance_cat(data, new_data, treatment, j, p_cutoff)
+          var_info <- get_balance_cat(
+            data, 
+            new_data, 
+            treatment, 
+            j, 
+            p_cutoff, 
+            rd_cutoff, 
+            p_criterion
+          )
           vote <- var_info$vote
           bal_results <- var_info$results
           
