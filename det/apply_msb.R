@@ -90,13 +90,17 @@ get_balance_cts <- function(
 #' @param treatment string indicating which column in 'data' tracks the treatment assignment
 #' @param variable string indicating on which column to compute balance
 #' @param p_cutoff numeric (positive (0, 1)) indicates the p-value of the test for covariate balance required for MSB intervention 
+#' @param diff_cutoff numeric (positive (0, 1)) indicates the imbalance on the scale of the absolute risk difference in a given category for MSB intervention.
+#' @param p_criterion boolean indicates whether to use p-value or risk difference for MSB intervention criteria
 #' @value list with two entries: 'results', a DF containing balance metrics for 'variable' in 'data' and 'vote', which indicates vote for MSB allocation.
 get_balance_cat <- function(
     data,
     new_data,
     treatment, 
     variable,
-    p_cutoff = 0.3
+    p_cutoff = 0.3,
+    diff_cutoff = 0.1,
+    p_criterion = TRUE
 ){
   
   # New participant value
@@ -108,23 +112,46 @@ get_balance_cat <- function(
     
   } else {
     
-    # Compute balance stats
-    mod <- chisq.test(data[[variable]], data[[treatment]])
     
-    # Format output as table
-    out <- list(
-      var = variable,
-      observed = list(mod$observed),
-      expected = list(mod$expected),
-      diff = list(mod$observed - mod$expected),
-      stat = mod$statistic,
-      p = mod$p.value
-    )
-    
-    nv <- paste(new_val)
-    # Compute and return vote
-    v0 <- (out$p < p_cutoff & out$expected[[1]][nv, 1] > out$observed[[1]][nv, 1])
-    v1 <- (out$p < p_cutoff & out$expected[[1]][nv, 2] > out$observed[[1]][nv, 2])
+    if(p_criterion){
+      
+      # Compute balance stats
+      mod <- chisq.test(data[[variable]], data[[treatment]])
+      
+      # Format output as table
+      out <- list(
+        var = variable,
+        observed = list(mod$observed),
+        expected = list(mod$expected),
+        diff = list(mod$observed - mod$expected),
+        stat = mod$statistic,
+        p = mod$p.value
+      )
+      
+      nv <- paste(new_val)
+      # Compute and return vote
+      v0 <- (out$p < p_cutoff & out$expected[[1]][nv, 1] > out$observed[[1]][nv, 1])
+      v1 <- (out$p < p_cutoff & out$expected[[1]][nv, 2] > out$observed[[1]][nv, 2])
+      
+    } else {
+      
+      # Imbalance computed by risk difference on category of new participant.
+      mod <- lm(data[[variable]] == new_val ~ data[[treatment]])
+      res <- summary(mod)$coefficients
+      
+      out <- list(
+        var = variable, 
+        diff = res["data[[treatment]]", "Estimate"],
+        ctrl = res["(Intercept)", "Estimate"]
+      )
+      out$trt <- out$ctrl + out$diff
+      
+      
+      # Vote for control if there is a higher proportion in Trt vs. Ctrl (to increase ctrl proportion)
+      v0 <- ((abs(out$diff) > diff_cutoff) & (out$diff > 0))
+      v1 <- ((abs(out$diff) > diff_cutoff) & (out$diff < 0))
+      
+    }
     
     # Compute final vote
     if(v1 & v0){
