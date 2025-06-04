@@ -239,6 +239,10 @@ get_balance_center <- function(
 #' @param treamtent string indicating treatment assignment variable
 #' @param min_n_adapt integer indicating # of already randomized individuals required to run adaptive algorithm
 #' @param prob_vote probability of assigning to treatment if it would improve balance
+#' @param p_cutoff numeric (0, 1) indicating level of tests for MSB
+#' @param diff_cutoff numeric (positive) indicating the largest magnitude difference in continous variables deemed negligible; on the scale of Cohen's d
+#' @param rd_cutoff numeric (0, 1) indicating the largest magnitude difference in binary/categorical variables deemed negligible; on the scale of risk difference
+#' @param p_criterion boolean indicating if the p-value of a test or an absolute difference (diff_cutoff/rd_cutoff) should be used
 #' @return treatment assignment probability
 #' @note 1 = treatment
 get_votes <- function(data, new_data, # data
